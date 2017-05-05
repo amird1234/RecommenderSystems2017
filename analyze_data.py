@@ -1,12 +1,17 @@
 import matplotlib.pyplot as plt
 import sys
+import argparse
+
 
 #sys.argv[1] if sys.argv[1] is not None else
 
 filename = '/Users/amirdahan/Downloads/data/amir_tmp.txt'
+parser = argparse.ArgumentParser()
+parser.add_argument('--file', help='an absolute path input file with "user item score" pattern')
+args = parser.parse_args()
+print args.file
 
-
-f = open(filename, 'r')
+f = open(args.file, 'r')
 lines = f.read().splitlines()
 f.close()
 lines = map(int, lines)
