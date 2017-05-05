@@ -7,8 +7,8 @@ import numpy
 #sys.argv[1] if sys.argv[1] is not None else
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--inFile', help='an absolute path input file with "user item interaction" pattern')
-parser.add_argument('--outFile', help='an absolute path output file with dictionary')
+parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
+parser.add_argument('outFile', help='an absolute path output file with dictionary')
 args = parser.parse_args()
 print args.inFile
 print args.outFile
