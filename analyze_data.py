@@ -10,8 +10,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
 parser.add_argument('outFile', help='an absolute path output file with dictionary')
 args = parser.parse_args()
-print args.inFile
-print args.outFile
+print(args.inFile)
+print(args.outFile)
 
 f = open(args.inFile, 'r')
 lines = f.read()
@@ -31,16 +31,16 @@ for line in lines:
     key, interaction = tokens[0] + ' ' + tokens[1], int(tokens[2])
 
     if key in myDict.keys():
-        print "already seen this key"
+        print("already seen this key")
     else:
         myDict[line] = {}
 
     myDict[line][interaction] = 1
 
     if count%1000 == 0:
-        print count
+        print(count)
 
-print 'woohhoo'
+print('woohhoo')
 
 desired_action = {2,3,5}
 count = 0
@@ -52,7 +52,7 @@ for key,value in myDict.items():
         myDict[key] = 0
 
     if count%1000 == 0:
-        print count
+        print(count)
 
 numpy.save(args.outFile, myDict)
-print 'done'
+print('done')
