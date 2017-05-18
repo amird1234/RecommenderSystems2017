@@ -28,9 +28,9 @@ class RecSys:
             elif timestamp not in interactions_db[user][item][interaction].keys():
                 interactions_db[user][item][interaction][timestamp] = 1
 
-            if count % 1000 == 0:
+            if count % 10000 == 0:
                 print(count)
-        print('done parsing from file to dictionary, found %s elements', len(interactions_db))
+        print('done parsing from file to dictionary, found %s elements'% len(interactions_db))
         self.interactions_db = interactions_db
 
     def CTR(self):
@@ -50,8 +50,28 @@ class RecSys:
 
         for user, value in self.interactions_db.items():
             CTR_res[user] = CTRu(user);
-
+        f = open("userCTR", 'w')
+        for k in CTR_res.keys():
+            if CTR_res[k] > 0 and CTR_res[k] < 1:
+                print(k,CTR_res[k])
+            f.write(str(k) + " " + str(CTR_res[k]) + "\n")
         return CTR_res
+
+    def splitData(self,TrainFileName,testFileName):
+        f = open(TrainFileName, 'w')
+        hiddenItems = open(testFileName, 'w')
+        for user in self.interactions_db:
+            allItems = list(self.interactions_db[user].keys())
+            if (len(self.interactions_db[user]) > 1):
+                hiddenItem = list(self.interactions_db[user].keys())[-1]
+                hiddenItems.write(str(user) + " " + str(hiddenItem)+ "\n")
+                allItems = list(self.interactions_db[user].keys())[:-1]
+            for item in allItems:
+                for interaction in self.interactions_db[user][item]:
+                    if interaction in [1,2,3]:
+                        f.write(str(user) + " " + str(item)+ "\n")
+                        break
+        f.close()
 
 
 if __name__ == '__main__':
@@ -71,3 +91,8 @@ if __name__ == '__main__':
 
     # Run CTR on the initialized
     CTR_res = recSys.CTR()
+
+    #recSys.splitData("dbOutput","hiddenItems")
+
+
+
