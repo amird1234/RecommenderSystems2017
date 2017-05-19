@@ -40,21 +40,27 @@ class RecSys:
         def CTRu(user):
             numerator = 0
             denominator = 0
+            numeratorItems = set()
+            denominatorItems = set()
 
             for item in self.interactions_db[user]:
                 if 0 in self.interactions_db[user][item].keys():
                     denominator += 1 if len(self.interactions_db[user][item][0]) > 0 else 0
+                    for x in self.interactions_db[user][item][0]:
+                        denominatorItems.add(x)
+                    for x in set(self.interactions_db[user][item].keys()) & self.positive_feedback:
+                        numeratorItems.add(item)
                     numerator += 1 if len(
                         set(self.interactions_db[user][item].keys()) & self.positive_feedback) > 0 else 0
-            return float(numerator) / denominator if denominator is not 0 else 0
+            return (float(numerator) / denominator, numeratorItems, denominatorItems) if denominator is not 0 else (0,0,0)
 
         for user, value in self.interactions_db.items():
             CTR_res[user] = CTRu(user);
         f = open("userCTR", 'w')
         for k in CTR_res.keys():
-            if CTR_res[k] > 0 and CTR_res[k] < 1:
+            if CTR_res[k][0] > 0 and CTR_res[k][0] < 1:
                 print(k,CTR_res[k])
-            f.write(str(k) + " " + str(CTR_res[k]) + "\n")
+            f.write(str(k) + " " + str(CTR_res[k][0]) + " " + str(CTR_res[k][1])+ " " + str(CTR_res[k][2]) + "\n")
         return CTR_res
 
     def splitData(self,TrainFileName,testFileName):
