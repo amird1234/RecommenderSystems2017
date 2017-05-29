@@ -84,6 +84,10 @@ if __name__ == '__main__':
     # grab the arguments when the script is ran
     parser = argparse.ArgumentParser()
     parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
+    parser.add_argument('trainFileName', help='path of train data file')
+    parser.add_argument('testFileName', help='path of test data file')
+    parser.add_argument('split', help='should program split input to train/test files [yes/no]')
+
     args = parser.parse_args()
     print(args.inFile)
 
@@ -98,7 +102,7 @@ if __name__ == '__main__':
     # Run CTR on the initialized
     CTR_res = recSys.CTR()
 
-    #recSys.splitData("dbOutput","hiddenItems")
-
-
-
+    if args.split == 'yes':
+        #We shall split data to train and test if we're ordered to by arguments
+        recSys.splitData(args.trainFileName, args.testFileName)
+    #otherwise - use outXXXXFile
