@@ -1,5 +1,6 @@
 import argparse
 import collections
+import pickle
 
 IMPRESSION = 0
 
@@ -13,6 +14,17 @@ class RecSys:
         count = 0
         interactions_db = {}
         interactions_db2 = {}
+        try:
+            with open('interactions.txt', 'rb') as handle:
+                self.interactions_db = pickle.loads(handle.read())
+            with open('interactions2.txt', 'rb') as handle:
+                self.interactions_db2 = pickle.loads(handle.read())
+            print("took from .txt files")
+        except:
+            print("didn't manage to take from .txt files, keeping the regular flow")
+            self.interactions_db = {}
+            self.interactions_db2  = {}
+
         for line in lines:
             count += 1
 
@@ -33,14 +45,18 @@ class RecSys:
                 interactions_db[user][item][interaction][timestamp] = 1
 
             if user not in interactions_db2.keys():
-                interactions_db[user] = {}
-            interactions_db[user][timestamp] = (item,  interaction)
+                interactions_db2[user] = {}
+            interactions_db2[user][timestamp] = (item,  interaction)
 
             if count % 10000 == 0:
                 print(count)
         print('done parsing from file to dictionary, found %s elements'% len(interactions_db))
         self.interactions_db = interactions_db
         self.interactions_db2 = interactions_db2
+        with open('interactions.txt', 'wb') as handle:
+            pickle.dump(interactions_db, handle)
+        with open('interactions2.txt', 'wb') as handle:
+            pickle.dump(interactions_db2, handle)
 
     def CTR(self):
 
