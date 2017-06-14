@@ -104,7 +104,7 @@ class RecSys:
 
                 if interaction is not IMPRESSION and item not in impressed_item.keys():
                     #if interaction is not impression & we didn't see an impression of this item so far - put in test
-                    last = od[element]
+                    last = timestamp
 
             if (last is  None):
                 continue #if we didn't find item, TODO BOM
@@ -112,7 +112,9 @@ class RecSys:
             #put right tupples in trainItems and testItems
             for element in od:
                 item = od[element][0]
-                if element == last:
+                timestamp = element
+
+                if timestamp == last:
                     #Put in test the last (user,item) that has interaction without impression 
                     testFile.write(str(user) + " " + str(item)+ "\n")
                     break #since we don't care about interactions after the last
