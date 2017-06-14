@@ -1,14 +1,18 @@
 import argparse
+import collections
 
+IMPRESSION = 0
 
 class RecSys:
     interactions_db = {}
+    interactions_db2 = {}
     positive_feedback = {1, 2, 3}
 
     def __init__(self, lines):
         ##interactions_db[user][item][interaction_type][timestamp]
         count = 0
         interactions_db = {}
+        interactions_db2 = {}
         for line in lines:
             count += 1
 
@@ -28,10 +32,15 @@ class RecSys:
             elif timestamp not in interactions_db[user][item][interaction].keys():
                 interactions_db[user][item][interaction][timestamp] = 1
 
+            if user not in interactions_db2.keys():
+                interactions_db[user] = {}
+            interactions_db[user][timestamp] = (item,  interaction)
+
             if count % 10000 == 0:
                 print(count)
         print('done parsing from file to dictionary, found %s elements'% len(interactions_db))
         self.interactions_db = interactions_db
+        self.interactions_db2 = interactions_db2
 
     def CTR(self):
 
@@ -57,21 +66,43 @@ class RecSys:
             f.write(str(k) + " " + str(CTR_res[k]) + "\n")
         return CTR_res
 
-    def splitData(self,TrainFileName,testFileName):
-        f = open(TrainFileName, 'w')
-        hiddenItems = open(testFileName, 'w')
-        for user in self.interactions_db:
-            allItems = list(self.interactions_db[user].keys())
-            if (len(self.interactions_db[user]) > 1):
-                hiddenItem = list(self.interactions_db[user].keys())[-1]
-                hiddenItems.write(str(user) + " " + str(hiddenItem)+ "\n")
-                allItems = list(self.interactions_db[user].keys())[:-1]
-            for item in allItems:
-                for interaction in self.interactions_db[user][item]:
-                    if interaction in [1,2,3]:
-                        f.write(str(user) + " " + str(item)+ "\n")
-                        break
-        f.close()
+    def splitData(self, trainFileName,testFileName):
+        testItems = []
+        trainItems = []
+        trainFile = open(trainFileName, 'w')
+        testFile = open(testFileName, 'w')
+        for user in self.interactions_db2:
+            impressed_item = {}
+            od = collections.OrderedDict(sorted(self.interactions_db2[user].items()))
+            last = None
+
+            #find the last interaction that is not impression
+            for element in od:
+                item = od[element][0]
+                timestamp = element
+                interaction = od[element][1]
+
+                if interaction == IMPRESSION:
+                    impressed_item[item] = 1
+
+                if interaction is not IMPRESSION and item not in impressed_item.keys():
+                    #if interaction is not impression & we didn't see an impression of this item so far - put in test
+                    last = od[element]
+
+            if (last is  None):
+                continue #if we didn't find item, TODO BOM
+
+            #put right tupples in trainItems and testItems
+            for element in od:
+                item = od[element][0]
+                if element == last:
+                    #Put in test the last (user,item) that has interaction without impression 
+                    testFile.write(str(user) + " " + str(item)+ "\n")
+                    break #since we don't care about interactions after the last
+                else:
+                    trainFile.write(str(user) + " " + str(item)+ "\n")
+        trainFile.close()
+        testFile.close()
 
 
 if __name__ == '__main__':
@@ -94,7 +125,7 @@ if __name__ == '__main__':
     recSys = RecSys(lines)
 
     # Run CTR on the initialized
-    CTR_res = recSys.CTR()
+    #CTR_res = recSys.CTR()
 
     if args.split == 'yes':
         #We shall split data to train and test if we're ordered to by arguments
