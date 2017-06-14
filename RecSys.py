@@ -15,6 +15,7 @@ class RecSys:
         interactions_db = {}
         interactions_db2 = {}
         try:
+            print("Loading DB from .txt files")
             with open('interactions.txt', 'rb') as handle:
                 self.interactions_db = pickle.loads(handle.read())
             with open('interactions2.txt', 'rb') as handle:
@@ -116,10 +117,17 @@ class RecSys:
 
                 if timestamp == last:
                     #Put in test the last (user,item) that has interaction without impression 
-                    testFile.write(str(user) + " " + str(item)+ "\n")
+                    testItems.append(str(user) + " " + str(item)+ "\n")
                     break #since we don't care about interactions after the last
                 else:
-                    trainFile.write(str(user) + " " + str(item)+ "\n")
+                    trainItems.append(str(user) + " " + str(item)+ "\n")
+
+        #remove duplicates
+        trainItems = set(trainItems)
+        testItems = set(testItems)
+
+        testFile.writelines(item for item in testItems)
+        trainFile.writelines(item for item in trainItems)
         trainFile.close()
         testFile.close()
 
