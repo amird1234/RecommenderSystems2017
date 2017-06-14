@@ -19,9 +19,10 @@ class RecSys:
                 self.interactions_db = pickle.loads(handle.read())
             with open('interactions2.txt', 'rb') as handle:
                 self.interactions_db2 = pickle.loads(handle.read())
-            print("took from .txt files")
+            print("Loaded DB from .txt files")
+            return
         except:
-            print("didn't manage to take from .txt files, keeping the regular flow")
+            print("Didn't manage to load DB from .txt files, keeping the regular flow")
             self.interactions_db = {}
             self.interactions_db2  = {}
 
