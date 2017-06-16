@@ -1,6 +1,7 @@
 import argparse
 import collections
 import pickle
+from scipy import spatial
 
 IMPRESSION = 0
 
@@ -8,6 +9,8 @@ class RecSys:
     interactions_db = {}
     interactions_db2 = {}
     positive_feedback = {1, 2, 3}
+    evaluation_results = {}
+    ctr_results = {}
 
     def __init__(self, lines):
         ##interactions_db[user][item][interaction_type][timestamp]
@@ -52,6 +55,7 @@ class RecSys:
 
             if count % 10000 == 0:
                 print(count)
+
         print('done parsing from file to dictionary, found %s elements'% len(interactions_db))
         self.interactions_db = interactions_db
         self.interactions_db2 = interactions_db2
@@ -61,7 +65,6 @@ class RecSys:
             pickle.dump(interactions_db2, handle)
 
     def CTR(self):
-
         CTR_res = {}
 
         def CTRu(user):
@@ -76,7 +79,7 @@ class RecSys:
             return float(numerator) / denominator if denominator is not 0 else 0
 
         for user, value in self.interactions_db.items():
-            CTR_res[user] = CTRu(user);
+            CTR_res[user] = CTRu(user)
         f = open("userCTR", 'w')
         for k in CTR_res.keys():
             if CTR_res[k] > 0 and CTR_res[k] < 1:
@@ -84,7 +87,18 @@ class RecSys:
             f.write(str(k) + " " + str(CTR_res[k]) + "\n")
         return CTR_res
 
-    def splitData(self, trainFileName,testFileName):
+    def calculate_cosine_similarity(self):
+        """
+        Calculates the cosine similarity between CTR and the evaluation methods
+        :return: cosine similarity between CTR and each of evaluation methods
+        """
+
+        similarity = {}
+        for method in self.evaluation_results:
+            similarity[method] = 1 - spatial.distance.cosine(self.ctr_results, method)
+        return similarity
+
+    def splitData(self, trainFileName, testFileName):
         testItems = []
         trainItems = []
         trainFile = open(trainFileName, 'w')
@@ -110,7 +124,7 @@ class RecSys:
             if (last is  None):
                 continue #if we didn't find item, TODO BOM
 
-            #put right tupples in trainItems and testItems
+            #put right tuples in trainItems and testItems
             for element in od:
                 item = od[element][0]
                 timestamp = element
@@ -138,7 +152,7 @@ if __name__ == '__main__':
     parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
     parser.add_argument('trainFileName', help='path of train data file')
     parser.add_argument('testFileName', help='path of test data file')
-    parser.add_argument('split', help='should program split input to train/test files [yes/no]')
+    #add_argument('split', help='should program split input to train/test files [yes/no]')
 
     args = parser.parse_args()
     print(args.inFile)
@@ -152,9 +166,7 @@ if __name__ == '__main__':
     recSys = RecSys(lines)
 
     # Run CTR on the initialized
-    #CTR_res = recSys.CTR()
+    recSys.ctr_results = recSys.CTR()
 
-    if args.split == 'yes':
-        #We shall split data to train and test if we're ordered to by arguments
-        recSys.splitData(args.trainFileName, args.testFileName)
-    #otherwise - use outXXXXFile
+    #We shall split data to train and test if we're ordered to by arguments
+    recSys.splitData(args.trainFileName, args.testFileName)
