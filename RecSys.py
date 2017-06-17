@@ -90,6 +90,31 @@ class RecSys:
         print("found %d users for CTR" % len(CTR_res))
         self.ctr_results = CTR_res
 
+    def clear_ctr_output(self):
+        print('Removing non intersecting users from DB')
+        users = []
+        # Collect the mutual users list between all algorithms
+        for method in self.evaluation_results:
+            if len(users) == 0:  # first one
+                users = set(self.evaluation_results[method].keys())
+            else:
+                users &= set(self.evaluation_results[method].keys())
+        users &= set(self.ctr_results.keys())
+        print("Found %d mutual users between algorithms" % len(users))
+
+        # Remove the non existing users from all evaluation methods results
+        tmp_dict = {}
+        for method in self.evaluation_results:
+            tmp_dict[method] = {}
+            for user in users:
+                tmp_dict[method][user] = self.evaluation_results[method][user]
+        self.evaluation_results = tmp_dict
+
+        # Remove the non existing users from CTR results
+        tmp_ctr_dict = {}
+        for user in users:
+            tmp_ctr_dict[user] = self.ctr_results[user]
+        self.ctr_results = tmp_ctr_dict
 
     def ALGS(self, evaluations_dir):
         """
@@ -120,10 +145,12 @@ class RecSys:
         """
         print("calculating cosine similarity between ctr and all other evaluation methods")
 
+        self.clear_ctr_output()
+
         similarity = {}
         for method in self.evaluation_results:
-            similarity[method] = 1 - spatial.distance.cosine(self.ctr_results, list(self.evaluation_results[method].values()))
-            print("Cosine similarity between CTR and %s is %f" % method, similarity[method])
+            similarity[method] = 1 - spatial.distance.cosine(list(self.ctr_results), list(self.evaluation_results[method].values()))
+            print("Cosine similarity between CTR and %s is %f" % (method, similarity[method]))
         return similarity
 
     def splitData(self, train_filename, test_filename):
