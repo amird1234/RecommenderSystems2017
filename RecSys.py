@@ -2,6 +2,8 @@ import argparse
 import collections
 import pickle
 from scipy import spatial
+import sys
+import os
 
 IMPRESSION = 0
 
@@ -13,7 +15,7 @@ class RecSys:
     ctr_results = {}
 
     def __init__(self, lines):
-        ##interactions_db[user][item][interaction_type][timestamp]
+        # interactions_db[user][item][interaction_type][timestamp]
         count = 0
         interactions_db = {}
         interactions_db2 = {}
@@ -26,7 +28,7 @@ class RecSys:
             print("Loaded DB from .txt files")
             return
         except:
-            print("Didn't manage to load DB from .txt files, keeping the regular flow")
+            print("%s: Didn't manage to load DB from .txt files, keeping the regular flow" % sys.exc_info()[0])
             self.interactions_db = {}
             self.interactions_db2  = {}
 
@@ -65,6 +67,7 @@ class RecSys:
             pickle.dump(interactions_db2, handle)
 
     def CTR(self):
+        print("Calculating CTR")
         CTR_res = {}
 
         def CTRu(user):
@@ -81,34 +84,61 @@ class RecSys:
         for user, value in self.interactions_db.items():
             CTR_res[user] = CTRu(user)
         f = open("userCTR", 'w')
-        for k in CTR_res.keys():
-            if CTR_res[k] > 0 and CTR_res[k] < 1:
-                print(k,CTR_res[k])
-            f.write(str(k) + " " + str(CTR_res[k]) + "\n")
-        return CTR_res
+        for user in CTR_res.keys():
+            f.write(str(user) + " " + str(CTR_res[user]) + "\n")
+        f.close()
+        print("found %d users for CTR" % len(CTR_res))
+        self.ctr_results = CTR_res
+
+
+    def ALGS(self, evaluations_dir):
+        """
+        go over all algorithm outputs and put them in
+        :return:
+        """
+        for filename in os.listdir(evaluations_dir):
+            if filename.endswith('_Store'):
+                continue
+            print("Fetching %s Evaluation data" % filename)
+            algFile = open('evaluations' + '/' + filename, 'r')
+            lines = algFile.read().splitlines()
+            algFile.close()
+            alg_evaluation = {}
+            for line in lines:
+                tokens = line.split()
+                user = int(tokens[0])
+                evaluation = float(tokens[1])
+                alg_evaluation[user] = evaluation
+            self.evaluation_results[filename] = collections.OrderedDict(sorted(alg_evaluation.items()))
+            print("found %d users for %s" % (len(self.evaluation_results[filename]), filename))
+
 
     def calculate_cosine_similarity(self):
         """
         Calculates the cosine similarity between CTR and the evaluation methods
         :return: cosine similarity between CTR and each of evaluation methods
         """
+        print("calculating cosine similarity between ctr and all other evaluation methods")
 
         similarity = {}
         for method in self.evaluation_results:
-            similarity[method] = 1 - spatial.distance.cosine(self.ctr_results, method)
+            similarity[method] = 1 - spatial.distance.cosine(self.ctr_results, list(self.evaluation_results[method].values()))
+            print("Cosine similarity between CTR and %s is %f" % method, similarity[method])
         return similarity
 
-    def splitData(self, trainFileName, testFileName):
+    def splitData(self, train_filename, test_filename):
+        print("splitting data to train and test")
+
         testItems = []
         trainItems = []
-        trainFile = open(trainFileName, 'w')
-        testFile = open(testFileName, 'w')
+        trainFile = open(train_filename, 'w')
+        testFile = open(test_filename, 'w')
         for user in self.interactions_db2:
             impressed_item = {}
             od = collections.OrderedDict(sorted(self.interactions_db2[user].items()))
             last = None
 
-            #find the last interaction that is not impression
+            # find the last interaction that is not impression
             for element in od:
                 item = od[element][0]
                 timestamp = element
@@ -118,25 +148,25 @@ class RecSys:
                     impressed_item[item] = 1
 
                 if interaction is not IMPRESSION and item not in impressed_item.keys():
-                    #if interaction is not impression & we didn't see an impression of this item so far - put in test
+                    # if interaction is not impression & we didn't see an impression of this item so far - put in test
                     last = timestamp
 
             if (last is  None):
-                continue #if we didn't find item, TODO BOM
+                continue  # if we didn't find item
 
-            #put right tuples in trainItems and testItems
+            # Put right tuples in trainItems and testItems
             for element in od:
                 item = od[element][0]
                 timestamp = element
 
                 if timestamp == last:
-                    #Put in test the last (user,item) that has interaction without impression 
+                    # Put in test the last (user,item) that has interaction without impression
                     testItems.append(str(user) + " " + str(item)+ "\n")
-                    break #since we don't care about interactions after the last
+                    break  # Since we don't care about interactions after the last
                 else:
                     trainItems.append(str(user) + " " + str(item)+ "\n")
 
-        #remove duplicates
+        # Remove duplicates
         trainItems = set(trainItems)
         testItems = set(testItems)
 
@@ -147,15 +177,15 @@ class RecSys:
 
 
 if __name__ == '__main__':
-    # grab the arguments when the script is ran
+    # Grab the arguments when the script is ran
     parser = argparse.ArgumentParser()
     parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
     parser.add_argument('trainFileName', help='path of train data file')
     parser.add_argument('testFileName', help='path of test data file')
-    #add_argument('split', help='should program split input to train/test files [yes/no]')
+    parser.add_argument('evaluationsLib', help='path of evaluations files lib')
+    # add_argument('split', help='should program split input to train/test files [yes/no]')
 
     args = parser.parse_args()
-    print(args.inFile)
 
     f = open(args.inFile, 'r')
     lines = f.read()
@@ -166,7 +196,12 @@ if __name__ == '__main__':
     recSys = RecSys(lines)
 
     # Run CTR on the initialized
-    recSys.ctr_results = recSys.CTR()
+    recSys.CTR()
 
-    #We shall split data to train and test if we're ordered to by arguments
-    recSys.splitData(args.trainFileName, args.testFileName)
+    # Get evaluation algorithms
+    recSys.ALGS(args.evaluationsLib)
+
+    recSys.calculate_cosine_similarity()
+
+    # We shall split data to train and test if we're ordered to by arguments
+    #recSys.splitData(args.trainFileName, args.testFileName)
