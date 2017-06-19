@@ -4,6 +4,7 @@ import pickle
 from scipy import spatial
 import sys
 import os
+import numpy
 
 IMPRESSION = 0
 
@@ -137,6 +138,20 @@ class RecSys:
             self.evaluation_results[filename] = collections.OrderedDict(sorted(alg_evaluation.items()))
             print("found %d users for %s" % (len(self.evaluation_results[filename]), filename))
 
+    def calculate_pierson_similarity(self):
+        """
+        Calculates the cosine similarity between CTR and the evaluation methods
+        :return: cosine similarity between CTR and each of evaluation methods
+        """
+        print("calculating cosine similarity between ctr and all other evaluation methods")
+
+        self.clear_ctr_output()
+
+        similarity = {}
+        for method in self.evaluation_results:
+            similarity[method] = abs(numpy.corrcoef(list(self.ctr_results), list(self.evaluation_results[method].values()))[1, 0])
+            print("Pierson similarity between CTR and %s is %f" % (method, similarity[method]))
+        return similarity
 
     def calculate_cosine_similarity(self):
         """
@@ -229,6 +244,7 @@ if __name__ == '__main__':
     recSys.ALGS(args.evaluationsLib)
 
     recSys.calculate_cosine_similarity()
+    recSys.calculate_pierson_similarity()
 
     # We shall split data to train and test if we're ordered to by arguments
     #recSys.splitData(args.trainFileName, args.testFileName)
