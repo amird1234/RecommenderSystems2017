@@ -269,11 +269,11 @@ class BPR(object):
         ctrItems = {}
         ctrFile = open("userCTR",'r')
         ctr2File = open("userCTRfromBPR",'w')
-        for line in ctrFile.readlines():
+        '''for line in ctrFile.readlines():
             ctrLine = line.split()
             totalItems = [int(x) if x != '-' else x for x in ctrLine[2].split(',')]
             recommendedItems = [int(x) if x != '-' else x for x in ctrLine[3].split(',')]
-            ctrItems[int(ctrLine[0])] = (totalItems, recommendedItems)
+            ctrItems[int(ctrLine[0])] = (totalItems, recommendedItems)'''
         successF = open("successK",'w')
         MRRf = open("mrrRes",'w')
         MRRsoft = open("mrrSoftRes", 'w')

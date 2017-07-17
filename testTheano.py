@@ -20,8 +20,9 @@ with open('items.csv', newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter='\t')
     next(reader, None)
     for row in reader:
+        titleSet = set([int(x) for x in row[1].split(',') if x != ''])
         val = [int(x) for x in row[2:5] if x != '']
-        items2vec[row[0]] = val
+        items2vec[row[0]] = (titleSet,val)
 # Initialising BPR model, 10 latent factors
 bpr = BPR(10, len(users_to_index.keys()), len(items_to_index.keys()))
 # Training model, 30 epochs

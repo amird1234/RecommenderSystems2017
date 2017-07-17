@@ -16,12 +16,19 @@ class RecSys:
     ctr_results = {}
 
     def __init__(self, lines):
-        # interactions_db[user][item][interaction_type][timestamp]
+        '''
+        Goal of this function is to store hash table of all data together, in the following formats:
+            interactions_db[user][item][interaction_type][timestamp] = 1
+            interactions_db2[user][timestamp] = (item,  interaction)
+        :param lines: list of all usage-points with the pattern 'user item interaction'
+        '''
+        #
         count = 0
         interactions_db = {}
         interactions_db2 = {}
         try:
-            print("Loading DB from .txt files")
+            # we try to load hash table from a pickled file
+            print("Loading DB from pickled .txt files")
             with open('interactions.txt', 'rb') as handle:
                 self.interactions_db = pickle.loads(handle.read())
             with open('interactions2.txt', 'rb') as handle:
@@ -138,6 +145,9 @@ class RecSys:
             self.evaluation_results[filename] = collections.OrderedDict(sorted(alg_evaluation.items()))
             print("found %d users for %s" % (len(self.evaluation_results[filename]), filename))
 
+    def __getattribute__(self, *args, **kwargs):
+        return super().__getattribute__(*args, **kwargs)
+
     def calculate_pierson_similarity(self):
         """
         Calculates the cosine similarity between CTR and the evaluation methods
@@ -173,6 +183,8 @@ class RecSys:
 
         testItems = []
         trainItems = []
+        if (os.path.isfile(train_filename) and  os.path.isfile(test_filename)):
+            return
         trainFile = open(train_filename, 'w')
         testFile = open(test_filename, 'w')
         for user in self.interactions_db2:
@@ -221,7 +233,7 @@ class RecSys:
 if __name__ == '__main__':
     # Grab the arguments when the script is ran
     parser = argparse.ArgumentParser()
-    parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern')
+    parser.add_argument('inFile', help='an absolute path input file with "user item interaction" pattern (all data)')
     parser.add_argument('trainFileName', help='path of train data file')
     parser.add_argument('testFileName', help='path of test data file')
     parser.add_argument('evaluationsLib', help='path of evaluations files lib')
@@ -237,6 +249,12 @@ if __name__ == '__main__':
     # Parse data and init the databases
     recSys = RecSys(lines)
 
+    # We shall split data to train and test if we're ordered to by arguments
+    recSys.splitData(args.trainFileName, args.testFileName)
+
+    # run BPR and bring evaluations of results using several methods
+    os.system('python testTheano.py ' + args.trainFileName + ' ' + args.testFileName)
+
     # Run CTR on the initialized
     recSys.CTR()
 
@@ -246,5 +264,4 @@ if __name__ == '__main__':
     recSys.calculate_cosine_similarity()
     recSys.calculate_pierson_similarity()
 
-    # We shall split data to train and test if we're ordered to by arguments
-    #recSys.splitData(args.trainFileName, args.testFileName)
+
