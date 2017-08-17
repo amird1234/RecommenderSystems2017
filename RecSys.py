@@ -4,6 +4,7 @@ import pickle
 from scipy import spatial
 import sys
 import os
+from numpy import average
 import numpy
 
 IMPRESSION = 0
@@ -133,7 +134,7 @@ class RecSys:
             if filename.endswith('_Store'):
                 continue
             print("Fetching %s Evaluation data" % filename)
-            algFile = open('evaluations' + '/' + filename, 'r')
+            algFile = open(evaluations_dir + '/' + filename, 'r')
             lines = algFile.read().splitlines()
             algFile.close()
             alg_evaluation = {}
@@ -159,7 +160,7 @@ class RecSys:
 
         similarity = {}
         for method in self.evaluation_results:
-            similarity[method] = abs(numpy.corrcoef(list(self.ctr_results), list(self.evaluation_results[method].values()))[1, 0])
+            similarity[method] = abs(numpy.corrcoef(list(self.ctr_results.values()), list(self.evaluation_results[method].values()))[1, 0])
             print("Pierson similarity between CTR and %s is %f" % (method, similarity[method]))
         return similarity
 
@@ -173,8 +174,15 @@ class RecSys:
         self.clear_ctr_output()
 
         similarity = {}
+
         for method in self.evaluation_results:
-            similarity[method] = 1 - spatial.distance.cosine(list(self.ctr_results), list(self.evaluation_results[method].values()))
+            xavg = average(list(self.ctr_results.values()))
+            yavg = average(list(self.evaluation_results[method].values()))
+            #print("CTR avg %f" % xavg)
+            #print("evaluation avg %f" % yavg)
+            xval = numpy.array(list(self.ctr_results.values()))
+            yval = numpy.array(list(self.evaluation_results[method].values()))
+            similarity[method] = 1 - spatial.distance.cosine(xval, yval)
             print("Cosine similarity between CTR and %s is %f" % (method, similarity[method]))
         return similarity
 
@@ -253,7 +261,7 @@ if __name__ == '__main__':
     recSys.splitData(args.trainFileName, args.testFileName)
 
     # run BPR and bring evaluations of results using several methods
-    os.system('python testTheano.py ' + args.trainFileName + ' ' + args.testFileName)
+    #os.system('python testTheano.py ' + args.trainFileName + ' ' + args.testFileName)
 
     # Run CTR on the initialized
     recSys.CTR()

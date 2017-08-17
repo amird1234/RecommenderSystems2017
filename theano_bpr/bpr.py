@@ -234,12 +234,17 @@ class BPR(object):
                     maxVal = predictions[int(item)]
                     print("new val %d" % predictions[int(item)])
         return maxIdx
+    def getSetDif(self,firstSet,secondSet):
+        return 0 if len(firstSet | secondSet) == 0 else len(firstSet & secondSet)/len(firstSet | secondSet)
     def getSoftDist(self,firstItem, secondItem, item2vec,index_to_items):
             numValues = [1 if x == y else 0 for x,y in zip(item2vec[index_to_items[firstItem]][1],item2vec[index_to_items[secondItem]][1])]
-            firstSetValues =  item2vec[index_to_items[firstItem]][0]
+            setValues = []
+            for x,y in zip(item2vec[index_to_items[firstItem]][0], item2vec[index_to_items[secondItem]][0]):
+                setValues.append(self.getSetDif(x,y))
+            '''firstSetValues =  item2vec[index_to_items[firstItem]][0]
             secondSetValues = item2vec[index_to_items[secondItem]][0]
-            setProp = 0 if len(firstSetValues | secondSetValues) == 0 else len(firstSetValues & secondSetValues)/len(firstSetValues | secondSetValues)
-            return numpy.mean(numValues + [setProp])
+            setProp = 0 if len(firstSetValues | secondSetValues) == 0 else len(firstSetValues & secondSetValues)/len(firstSetValues | secondSetValues)'''
+            return numpy.mean(numValues + setValues)
 
     def findClosestPos(self,topItems, currentItem, item2vec,index_to_items):
         maxV = 0
@@ -252,7 +257,7 @@ class BPR(object):
                 maxLoc = i
         return (maxLoc,maxV)
 
-    def test(self, test_data,items2vec,index_to_items,index_to_users):
+    def test(self, test_data,items2vec,index_to_items,index_to_users,k,outDir):
         """
           Computes the Area Under Curve (AUC) on `test_data`.
 
@@ -274,10 +279,10 @@ class BPR(object):
             totalItems = [int(x) if x != '-' else x for x in ctrLine[2].split(',')]
             recommendedItems = [int(x) if x != '-' else x for x in ctrLine[3].split(',')]
             ctrItems[int(ctrLine[0])] = (totalItems, recommendedItems)'''
-        successF = open("successK",'w')
-        MRRf = open("mrrRes",'w')
-        MRRsoft = open("mrrSoftRes", 'w')
-        MAPsoft = open("mapSoftRes", 'w')
+        successF = open("successK"+outDir,'w')
+        MRRf = open("mrrRes"+outDir,'w')
+        MRRsoft = open("mrrSoftRes"+outDir, 'w')
+        MAPsoft = open("mapSoftRes"+outDir, 'w')
         totalUsers = len(test_dict.keys())
         for user in test_dict.keys():
             if user in self._train_users:
@@ -285,7 +290,7 @@ class BPR(object):
                 n = 0
                 z += 1
                 predictions = self.predictions(user)
-                topItems = [int(x) for x in self.top_predictions(user,1000)]
+                topItems = [int(x) for x in self.top_predictions(user,k)]
                 #topItems = [int(index_to_items[int(x)]) for x in self.top_predictions(user,10)]
                 #print(test_dict[user][0],topItems)
                 #print(ctrItems[int(index_to_users[user])][0])
@@ -297,7 +302,7 @@ class BPR(object):
                 if test_dict[user][0] in topItems:
                     correct +=1
                     successF.write(index_to_users[user] + "\t1\n")
-                    print("found corect item for user %s for item %d" %(index_to_users[user], int(index_to_items[test_dict[user][0]])))
+                    #print("found corect item for user %s for item %d" %(index_to_users[user], int(index_to_items[test_dict[user][0]])))
                     #print(correct/z)
                 else:
                     successF.write(index_to_users[user] + "\t 0\n")

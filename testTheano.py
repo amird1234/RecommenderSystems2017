@@ -20,12 +20,13 @@ with open('items.csv', newline='') as csvfile:
     reader = csv.reader(csvfile, delimiter='\t')
     next(reader, None)
     for row in reader:
-        titleSet = set([int(x) for x in row[1].split(',') if x != ''])
-        val = [int(x) for x in row[2:5] if x != '']
+        titleSet = [set([int(x) for x in row[i].split(',') if x != '']) for i in [1,11]] #the columns with set of values
+        val = [float(x) if (x != '' and x != "null") else 0 for x in (row[3:5] )] #the columns with only numerical value
         items2vec[row[0]] = (titleSet,val)
 # Initialising BPR model, 10 latent factors
 bpr = BPR(10, len(users_to_index.keys()), len(items_to_index.keys()))
 # Training model, 30 epochs
-bpr.train(train_data, epochs=1)
+bpr.train(train_data, epochs=10)
 # Testing model
-print(bpr.test(test_data,items2vec,index_to_items,index_to_users))
+for k in [20]:
+    print(bpr.test(test_data,items2vec,index_to_items,index_to_users,k,"evalK"+str(k)))
